@@ -1,0 +1,431 @@
+---
+title: "Machine Learning Lab1-block2"
+author: "Lepeng Zhang, Xuan Wang, Priyarani Patil"
+date: "2023-12-03"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Statement of Contribution
+The group report was made based on the discussion after all of us had finished all three assignments. Assignment 1 was mainly contributed by Lepeng Zhang. Assignment 2 was mainly contributed by Xuan Wang. Assignment 3 was mainly contributed by Priyarani Patil.
+
+# Assignment 1. ENSEMBLE METHODS        
+### Q1      
+```{r, Assignment1_1, echo = FALSE}
+library(randomForest)
+library(knitr)
+
+set.seed(1234)
+x1<-runif(1000)
+x2<-runif(1000)
+tedata<-cbind(x1,x2)
+y<-as.numeric(x1<x2)
+telabels<-as.factor(y)
+#plot(x1,x2,col=(y+1))
+
+num_tree <- c(1,10,100)
+num_repeat <- 1000
+store_mat <- matrix(nrow = num_repeat, ncol = length(num_tree))
+for (i in 1:length(num_tree)){
+  for (j in 1:num_repeat){
+    x1<-runif(100)
+    x2<-runif(100)
+    trdata<-cbind(x1,x2)
+    y<-as.numeric(x1<x2)
+    trlabels<-as.factor(y)
+    
+    m1 <- randomForest(x = trdata, y = trlabels, ntree = num_tree[i], nodesize = 25, keep.forest = TRUE)
+    predicted_labels <- predict(m1, newdata = tedata)
+    misclassification_error <- mean(predicted_labels != telabels)
+    
+    store_mat[j,i] <- misclassification_error
+  }
+}
+
+mean_values <- colMeans(store_mat)
+variance_values <- apply(store_mat, 2, var)
+
+result_df <- data.frame(Mean = mean_values, Variance = variance_values)
+rownames(result_df) <- c("1 tree", "10 trees", "100 trees")
+kable(result_df, caption = "Classification Error", format = "markdown")
+```
+
+### Q2    
+```{r, Assignment1_2, echo = FALSE}
+set.seed(1234)
+x1<-runif(1000)
+x2<-runif(1000)
+tedata<-cbind(x1,x2)
+y<-as.numeric(x1<0.5)
+telabels<-as.factor(y)
+#plot(x1,x2,col=(y+1))
+
+num_tree <- c(1,10,100)
+num_repeat <- 1000
+store_mat <- matrix(nrow = num_repeat, ncol = length(num_tree))
+for (i in 1:length(num_tree)){
+  for (j in 1:num_repeat){
+    x1<-runif(100)
+    x2<-runif(100)
+    trdata<-cbind(x1,x2)
+    y<-as.numeric(x1<0.5)
+    trlabels<-as.factor(y)
+    
+    m1 <- randomForest(x = trdata, y = trlabels, ntree = num_tree[i], nodesize = 25, keep.forest = TRUE)
+    predicted_labels <- predict(m1, newdata = tedata)
+    misclassification_error <- mean(predicted_labels != telabels)
+    
+    store_mat[j,i] <- misclassification_error
+  }
+}
+
+mean_values <- colMeans(store_mat)
+variance_values <- apply(store_mat, 2, var)
+
+result_df <- data.frame(Mean = mean_values, Variance = variance_values)
+rownames(result_df) <- c("1 tree", "10 trees", "100 trees")
+kable(result_df, caption = "Classification Error", format = "markdown")
+```
+
+### Q3    
+```{r, Assignment1_3, echo = FALSE}
+set.seed(1234)
+x1<-runif(1000)
+x2<-runif(1000)
+tedata<-cbind(x1,x2)
+y<-as.numeric((x1<0.5&x2<0.5)|(x1>0.5&x2>0.5))
+telabels<-as.factor(y)
+#plot(x1,x2,col=(y+1))
+
+num_tree <- c(1,10,100)
+num_repeat <- 1000
+store_mat <- matrix(nrow = num_repeat, ncol = length(num_tree))
+for (i in 1:length(num_tree)){
+  for (j in 1:num_repeat){
+    x1<-runif(100)
+    x2<-runif(100)
+    trdata<-cbind(x1,x2)
+    y<-as.numeric((x1<0.5&x2<0.5)|(x1>0.5&x2>0.5))
+    trlabels<-as.factor(y)
+    
+    m1 <- randomForest(x = trdata, y = trlabels, ntree = num_tree[i], nodesize = 12, keep.forest = TRUE)
+    predicted_labels <- predict(m1, newdata = tedata)
+    misclassification_error <- mean(predicted_labels != telabels)
+    
+    store_mat[j,i] <- misclassification_error
+  }
+}
+
+mean_values <- colMeans(store_mat)
+variance_values <- apply(store_mat, 2, var)
+
+result_df <- data.frame(Mean = mean_values, Variance = variance_values)
+rownames(result_df) <- c("1 tree", "10 trees", "100 trees")
+kable(result_df, caption = "Classification Error", format = "markdown")
+```
+
+
+### Q4  
+
+
+
+
+
+# Assignment 2. MIXTURE MODELS              
+## Implementation explanation    
+###  Computation of the weights        
+According to the literature and instruction,    
+$$w_i(m)=p(y_i=m|x_i,\hat{\theta})=\frac{\hat{\pi_m}Bern(x_i|\mu_m)}{\sum_{j=1}^{M}\hat{\pi_j}Bern(x_i|\mu_j)}$$
+We calculate $\hat{\pi_m}Bern(x_i|\mu_m)$ using $log$ operation first and then $exp$ operation. The reason is that it's much more convenient to use $log$ for a product term and $exp$ operation is for setting it back.   
+$$\hat{\pi_m}Bern(x_i|\mu_m)=exp[log(\hat{\pi_m}Bern(x_i|\mu_m))]=exp[log(\hat{\pi_m})+\sum_{d=1}^{D}(x_{i,d}log(\mu_{m,d})+(1-x_{i,d})log(1-\mu_{m,d}))]$$
+
+$w_i(m)$ can easily be computed after getting all $\hat{\pi_m}Bern(x_i|\mu_m)$ with $m$ from 1 to $M$.    
+
+### Log likelihood computation       
+$$llik[it]=\sum_{i=1}^{n}log(p(x_i))=\sum_{i=1}^{n}log(\sum_{m=1}^{M}\hat{\pi_m}Bern(x_i|\mu_m))$$
+$\hat{\pi_m}Bern(x_i|\mu_m)$ has already been computed. A vector named $w\_sum$ was created to store $\sum_{m=1}^{M}\hat{\pi_m}Bern(x_i|\mu_m)$
+$$w\_sum[i]=\sum_{m=1}^{M}\hat{\pi_m}Bern(x_i|\mu_m)$$
+### ML parameter estimation  
+Just follow the equations 10.16 a and b in the slide.     
+
+The true $\mu$ shows in the graph below.  
+```{r, Assignment2_1, echo = FALSE}
+set.seed(1234567890)
+max_it <- 100 # max number of EM iterations
+min_change <- 0.1 # min change in log lik between two consecutive iterations
+n=1000 # number of training points
+D=10 # number of dimensions
+x <- matrix(nrow=n, ncol=D) # training data
+true_pi <- vector(length = 3) # true mixing coefficients
+true_mu <- matrix(nrow=3, ncol=D) # true conditional distributions
+true_pi=c(1/3, 1/3, 1/3)
+true_mu[1,]=c(0.5,0.6,0.4,0.7,0.3,0.8,0.2,0.9,0.1,1)
+true_mu[2,]=c(0.5,0.4,0.6,0.3,0.7,0.2,0.8,0.1,0.9,0)
+true_mu[3,]=c(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5)
+plot(true_mu[1,], type="o", col="blue", ylim=c(0,1), ylab = expression("value "*mu), main = expression("True " * mu))
+points(true_mu[2,], type="o", col="red")
+points(true_mu[3,], type="o", col="green")
+#legend("bottomleft", legend = c(expression(mu[1]), expression(mu[2]), expression(mu[3])), col = c("blue", "red", "green"), pch = 1, bty = "n")
+```
+
+```{r, Assignment2_2, echo = FALSE}
+
+# Producing the training data
+for(i in 1:n) {
+  m <- sample(1:3,1,prob=true_pi)
+  for(d in 1:D) {
+    x[i,d] <- rbinom(1,1,true_mu[m,d])
+  }
+}
+```
+
+
+## when M=3      
+```{r, Assignment2_3, echo = FALSE}
+
+M=3 # number of clusters
+w <- matrix(nrow=n, ncol=M) # weights
+pi <- vector(length = M) # mixing coefficients
+mu <- matrix(nrow=M, ncol=D) # conditional distributions
+llik <- vector(length = max_it) # log likelihood of the EM iterations
+# Random initialization of the parameters
+pi <- runif(M,0.49,0.51)
+pi <- pi / sum(pi)
+for(m in 1:M) {
+  mu[m,] <- runif(D,0.49,0.51)
+}
+pi
+mu
+
+# create this vector to store value
+w_sum <- vector(length = n)
+
+for(it in 1:max_it) {
+  plot(mu[1,], type="o", col="blue", ylim=c(0,1), ylab = expression("value "*mu))
+  points(mu[2,], type="o", col="red")
+  points(mu[3,], type="o", col="green")
+  #points(mu[4,], type="o", col="yellow")
+  Sys.sleep(0.5)
+  # E-step: Computation of the weights
+  for (i in 1:n) {
+    for (m in 1:M) {
+      # log operation for convenience
+      w[i, m] <- log(pi[m]) + sum(x[i, ] * log(mu[m, ]) + (1 - x[i, ]) * log(1 - mu[m, ]))
+    }
+    # exp operation for setting value back
+    w[i, ] <- exp(w[i, ])
+    # get the real w[i,m]
+    w_sum[i] <- sum(w[i, ])
+    w[i, ] <- w[i, ] / w_sum[i]
+  }
+  #Log likelihood computation.
+  llik[it] <- sum(log(w_sum))
+  
+  cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
+  flush.console()
+  # Stop if the lok likelihood has not changed significantly
+  if (it > 1 && abs(llik[it] - llik[it - 1]) < min_change) {
+    break
+  }
+  #M-step: ML parameter estimation from the data and weights
+  pi <- colMeans(w)
+  for (m in 1:M) {
+    mu[m, ] <- colSums(w[, m] * x) / sum(w[, m])
+  }
+}
+```
+
+
+```{r, Assignment2_4, echo = FALSE}
+
+cat("The final pi is:\n")
+pi
+cat("The final mu is:\n")
+mu
+plot(llik[1:it], type="o")
+```
+
+
+## when M=2      
+
+```{r, Assignment2_5, echo = FALSE}
+
+M=2 # number of clusters
+w <- matrix(nrow=n, ncol=M) # weights
+pi <- vector(length = M) # mixing coefficients
+mu <- matrix(nrow=M, ncol=D) # conditional distributions
+llik <- vector(length = max_it) # log likelihood of the EM iterations
+# Random initialization of the parameters
+pi <- runif(M,0.49,0.51)
+pi <- pi / sum(pi)
+for(m in 1:M) {
+  mu[m,] <- runif(D,0.49,0.51)
+}
+pi
+mu
+
+# create this vector to store value
+w_sum <- vector(length = n)
+
+for(it in 1:max_it) {
+  plot(mu[1,], type="o", col="blue", ylim=c(0,1), ylab = expression("value "*mu))
+  points(mu[2,], type="o", col="red")
+ # points(mu[3,], type="o", col="green")
+  #points(mu[4,], type="o", col="yellow")
+  Sys.sleep(0.5)
+  # E-step: Computation of the weights
+  for (i in 1:n) {
+    for (m in 1:M) {
+      # log operation for convenience
+      w[i, m] <- log(pi[m]) + sum(x[i, ] * log(mu[m, ]) + (1 - x[i, ]) * log(1 - mu[m, ]))
+    }
+    # exp operation for setting value back
+    w[i, ] <- exp(w[i, ])
+    # get the real w[i,m]
+    w_sum[i] <- sum(w[i, ])
+    w[i, ] <- w[i, ] / w_sum[i]
+  }
+  #Log likelihood computation.
+  llik[it] <- sum(log(w_sum))
+  
+  cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
+  flush.console()
+  # Stop if the lok likelihood has not changed significantly
+  if (it > 1 && abs(llik[it] - llik[it - 1]) < min_change) {
+    break
+  }
+  #M-step: ML parameter estimation from the data and weights
+  pi <- colMeans(w)
+  for (m in 1:M) {
+    mu[m, ] <- colSums(w[, m] * x) / sum(w[, m])
+  }
+}
+```
+
+
+
+```{r, Assignment2_6, echo = FALSE}
+
+cat("The final pi is:\n")
+pi
+cat("The final mu is:\n")
+mu
+plot(llik[1:it], type="o")
+```
+
+
+
+## when M=4      
+```{r, Assignment2_7, echo = FALSE}
+
+M=4 # number of clusters
+w <- matrix(nrow=n, ncol=M) # weights
+pi <- vector(length = M) # mixing coefficients
+mu <- matrix(nrow=M, ncol=D) # conditional distributions
+llik <- vector(length = max_it) # log likelihood of the EM iterations
+# Random initialization of the parameters
+pi <- runif(M,0.49,0.51)
+pi <- pi / sum(pi)
+for(m in 1:M) {
+  mu[m,] <- runif(D,0.49,0.51)
+}
+pi
+mu
+
+# create this vector to store value
+w_sum <- vector(length = n)
+
+for(it in 1:max_it) {
+  plot(mu[1,], type="o", col="blue", ylim=c(0,1), ylab = expression("value "*mu))
+  points(mu[2,], type="o", col="red")
+  points(mu[3,], type="o", col="green")
+  points(mu[4,], type="o", col="black")
+  Sys.sleep(0.5)
+  # E-step: Computation of the weights
+  for (i in 1:n) {
+    for (m in 1:M) {
+      # log operation for convenience
+      w[i, m] <- log(pi[m]) + sum(x[i, ] * log(mu[m, ]) + (1 - x[i, ]) * log(1 - mu[m, ]))
+    }
+    # exp operation for setting value back
+    w[i, ] <- exp(w[i, ])
+    # get the real w[i,m]
+    w_sum[i] <- sum(w[i, ])
+    w[i, ] <- w[i, ] / w_sum[i]
+  }
+  #Log likelihood computation.
+  llik[it] <- sum(log(w_sum))
+  
+  cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
+  flush.console()
+  # Stop if the lok likelihood has not changed significantly
+  if (it > 1 && abs(llik[it] - llik[it - 1]) < min_change) {
+    break
+  }
+  #M-step: ML parameter estimation from the data and weights
+  pi <- colMeans(w)
+  for (m in 1:M) {
+    mu[m, ] <- colSums(w[, m] * x) / sum(w[, m])
+  }
+}
+```
+
+
+```{r, Assignment2_8, echo = FALSE}
+
+cat("The final pi is:\n")
+pi
+cat("The final mu is:\n")
+mu
+plot(llik[1:it], type="o")
+```
+
+
+
+
+
+
+# Appendix  
+## Code for Assignment 1  
+### Q1
+```{r ref.label=c('Assignment1_1'), echo=TRUE, eval=FALSE}
+
+```
+
+### Q2
+```{r ref.label=c('Assignment1_2'), echo=TRUE, eval=FALSE}
+
+```
+
+### Q3
+```{r ref.label=c('Assignment1_3'), echo=TRUE, eval=FALSE}
+
+```
+
+
+## Code for Assignment 2   
+```{r ref.label=c('Assignment2_1, Assignment2_2'), echo=TRUE, eval=FALSE}
+
+```
+### when M=3  
+```{r ref.label=c('Assignment2_3, Assignment2_4'), echo=TRUE, eval=FALSE}
+
+```
+### when M=2  
+```{r ref.label=c('Assignment2_5, Assignment2_6'), echo=TRUE, eval=FALSE}
+
+```
+### when M=4  
+```{r ref.label=c('Assignment2_7, Assignment2_8'), echo=TRUE, eval=FALSE}
+
+```
+
+
+
+
+
