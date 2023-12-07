@@ -5,6 +5,9 @@ date: "2023-12-03"
 output: 
   pdf_document:
     latex_engine: xelatex
+    keep_tex: yes
+header-includes: 
+    - \usepackage{placeins}
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ### Statement of Contribution
-The group report was made based on the discussion after all of us had finished all three assignments. Assignment 1 was mainly contributed by Lepeng Zhang. Assignment 2 was mainly contributed by Xuan Wang. Assignment 3 was mainly contributed by Priyarani Patil.
+The group report was made based on the discussion after all of us had finished all three assignments. Assignment 1 was mainly contributed by Lepeng Zhang. Assignment 2 was mainly contributed by Xuan Wang and Priyarani Patil.
 
 # Assignment 1. ENSEMBLE METHODS        
 ### Q1      
@@ -150,6 +153,7 @@ $w_i(m)$ can easily be computed after getting all $\hat{\pi_m}Bern(x_i|\mu_m)$ w
 $$llik[it]=\sum_{i=1}^{n}log(p(x_i))=\sum_{i=1}^{n}log(\sum_{m=1}^{M}\hat{\pi_m}Bern(x_i|\mu_m))$$
 $\hat{\pi_m}Bern(x_i|\mu_m)$ has already been computed. A vector named $w\_sum$ was created to store $\sum_{m=1}^{M}\hat{\pi_m}Bern(x_i|\mu_m)$
 $$w\_sum[i]=\sum_{m=1}^{M}\hat{\pi_m}Bern(x_i|\mu_m)$$
+
 ### ML parameter estimation  
 Just follow the equations 10.16 a and b in the slide.     
 
@@ -186,7 +190,7 @@ for(i in 1:n) {
 
 
 ## when M=3      
-```{r, Assignment2_3, echo = FALSE}
+```{r, Assignment2_3, echo = FALSE, fig.show='hold'}
 
 M=3 # number of clusters
 w <- matrix(nrow=n, ncol=M) # weights
@@ -204,6 +208,8 @@ mu
 
 # create this vector to store value
 w_sum <- vector(length = n)
+# make labels and margins smaller
+par(cex=0.8, mar=c(2,2,0.5,1), mfrow = c(3, 3))
 
 for(it in 1:max_it) {
   plot(mu[1,], type="o", col="blue", ylim=c(0,1), ylab = expression("value "*mu))
@@ -253,7 +259,7 @@ plot(llik[1:it], type="o")
 
 ## when M=2      
 
-```{r, Assignment2_5, echo = FALSE}
+```{r, Assignment2_5, echo = FALSE, fig.show='hold'}
 
 M=2 # number of clusters
 w <- matrix(nrow=n, ncol=M) # weights
@@ -271,6 +277,8 @@ mu
 
 # create this vector to store value
 w_sum <- vector(length = n)
+# make labels and margins smaller
+par(cex=0.8, mar=c(2,2,0.5,1), mfrow = c(3, 3))
 
 for(it in 1:max_it) {
   plot(mu[1,], type="o", col="blue", ylim=c(0,1), ylab = expression("value "*mu))
@@ -321,7 +329,7 @@ plot(llik[1:it], type="o")
 
 
 ## when M=4      
-```{r, Assignment2_7, echo = FALSE}
+```{r, Assignment2_7, echo = FALSE, fig.show='hold'}
 
 M=4 # number of clusters
 w <- matrix(nrow=n, ncol=M) # weights
@@ -339,6 +347,8 @@ mu
 
 # create this vector to store value
 w_sum <- vector(length = n)
+# make labels and margins smaller
+par(cex=0.8, mar=c(2,2,0.5,1), mfrow = c(3, 3))
 
 for(it in 1:max_it) {
   plot(mu[1,], type="o", col="blue", ylim=c(0,1), ylab = expression("value "*mu))
@@ -386,9 +396,11 @@ plot(llik[1:it], type="o")
 ```
 
 
+According to above R results, it can be seen that:
 
+1) When $M=3$, the number of clusters in the model matches the true underlying structure of the data, thus in this scenario the estimated parameters can closely match the true mixing coefficients and conditional distributions(the final plot for $\mu$ distribution are quite similar to the plot for true $\mu$ distribution), and the model are able to capture the complexity of the data with three clusters. While, in terms of $M=2$ or $M=4$, the plots show that the estimated parameter deviate from the true distribution. When $M=2$, the model oversimplify the data, leading to a less accurate representation of the true distribution. And when $M=4$, the model try to fit into four clusters. As a result, the extra cluster might try to fit all the data, and overcomplicate the distribution. Besides, as the EM algorithm is for unsupervised learning, we don't the label each group orders for the training data, thus the order of final three clusters are not consistent with the order of true groups, but their distributions are similar.
 
-
+2) According to the plots for log likelihood over iterations, when $M=3$, the log likelihood increase steadily at the beginning, then reach a plateau after several iterations. The $\mu$ distribution plots also align with such behavior. 
 
 # Appendix  
 ## Code for Assignment 1  
